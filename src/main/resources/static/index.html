@@ -39,7 +39,9 @@ Welcome<br/><input id="text" type="text"/>
   }
 
   //连接关闭的回调方法
-  websocket.onclose = function () {
+  websocket.onclose = function (event) {
+    var message = "连接关闭";
+    websocket.send(message);
     setMessageInnerHTML("WebSocket连接关闭");
   }
 
@@ -55,6 +57,8 @@ Welcome<br/><input id="text" type="text"/>
 
   //关闭WebSocket连接
   function closeWebSocket() {
+    var message = "连接关闭";
+    websocket.send(message);
     websocket.close();
   }
 

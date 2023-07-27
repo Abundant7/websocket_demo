@@ -18,13 +18,30 @@ public class WebSockTest {
     private static int onlineCount=0;
     private static CopyOnWriteArrayList<WebSockTest> webSocketSet=new CopyOnWriteArrayList<WebSockTest>();
     private Session session;
-
+    public void sendMessage(String message) throws IOException {
+        this.session.getBasicRemote().sendText(message);
+    }
     @OnOpen
     public void onOpen(Session session){
-        this.session=session;
 
+        this.session=session;
         webSocketSet.add(this);//加入set中
         addOnlineCount();
+
+        for (WebSockTest item:webSocketSet){
+            try {
+                if(item.session != session)
+                item.sendMessage("客户端"+session.getId()+"加入连接！当前在线人数为"+getOnlineCount());
+                else
+                item.sendMessage("当前在线人数为"+getOnlineCount()+"  您的客户端ID为："+session.getId());
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                continue;
+            }
+        }
+
+
         System.out.println("有新连接加入！当前在线人数为"+getOnlineCount());
     }
 
@@ -41,7 +58,11 @@ public class WebSockTest {
         //        群发消息
         for (WebSockTest item:webSocketSet){
             try {
-                item.sendMessage("来自客户端"+session.getId()+"的消息："+message);
+                if(item.session != session)
+                item.sendMessage("客户端"+session.getId()+"："+message);
+                else
+                item.sendMessage("我："+message);
+
             } catch (IOException e) {
                 e.printStackTrace();
                 continue;
@@ -55,10 +76,10 @@ public class WebSockTest {
         throwable.printStackTrace();
     }
     //   下面是自定义的一些方法
-    public void sendMessage(String message) throws IOException {
+    /*public void sendMessage(String message) throws IOException {
         this.session.getBasicRemote().sendText(message);
     }
-
+*/
     public static synchronized int getOnlineCount(){
         return onlineCount;
     }
