@@ -32,17 +32,21 @@ public class WebSockTest {
 
         for (WebSockTest item:webSocketSet){
             try {
-                if(item.session != session)
-                item.sendMessage("客户端"+session.getId()+"加入连接！当前在线人数为"+getOnlineCount());
-                else
-                item.sendMessage("当前在线人数为"+getOnlineCount()+"  您的客户端ID为："+session.getId());
+                if(item.session != session){
+                    //item.sendMessage("客户端"+session.getId()+"加入连接！当前在线人数为"+getOnlineCount());
+                    item.session.getBasicRemote().sendText("客户端"+session.getId()+"加入连接！当前在线人数为"+getOnlineCount());
+                }
+
+                else{
+                    //item.sendMessage("当前在线人数为"+getOnlineCount()+"  您的客户端ID为："+session.getId());
+                    item.session.getBasicRemote().sendText("当前在线人数为"+getOnlineCount()+"  您的客户端ID为："+session.getId());
+                }
 
             } catch (IOException e) {
                 e.printStackTrace();
                 continue;
             }
         }
-
 
         System.out.println("有新连接加入！当前在线人数为"+getOnlineCount());
     }
@@ -64,27 +68,34 @@ public class WebSockTest {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
         System.out.println("来自客户端"+session.getId()+"的消息："+message);
         //        群发消息
-        for (WebSockTest item:webSocketSet){
-            try {
 
-
-                if(item.session != session){
-                    item.sendMessage(time.format(formatter) + "   客户端"+session.getId()+"："+message);
-                }
-
-
-                else{
-                    item.sendMessage(time.format(formatter) + "   我："+message);
-                }
-
-
-            } catch (IOException e) {
-                e.printStackTrace();
-                continue;
-            }
-        }
         if(message.equals("10001")){
-            this.sendMessage(time.format(formatter) + "   后端："+ "18001");
+            //this.sendMessage(time.format(formatter) + "   后端："+ "18001");
+            this.session.getBasicRemote().sendText(time.format(formatter) + "   我："+message);
+            this.session.getBasicRemote().sendText(time.format(formatter) + "   后端："+ "18001");
+        }
+        else{
+            for (WebSockTest item:webSocketSet){
+                try {
+
+
+                    if(item.session != session){
+                        //item.sendMessage(time.format(formatter) + "   客户端"+session.getId()+"："+message);
+                        item.session.getBasicRemote().sendText(time.format(formatter) + "   客户端"+session.getId()+"："+message);
+                    }
+
+
+                    else{
+                        //item.sendMessage(time.format(formatter) + "   我："+message);
+                        item.session.getBasicRemote().sendText(time.format(formatter) + "   我："+message);
+                    }
+
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    continue;
+                }
+            }
         }
     }
 
