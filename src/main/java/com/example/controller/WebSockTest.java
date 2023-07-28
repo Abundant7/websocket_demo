@@ -6,6 +6,8 @@ import org.springframework.stereotype.Component;
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -53,20 +55,36 @@ public class WebSockTest {
     }
 
     @OnMessage
-    public void onMessage(String message,Session session) throws JsonProcessingException {
+    public void onMessage(String message,Session session) throws IOException {
+
+        /*if(message.equals("10001")){
+            this.sendMessage("18001");
+        }*/
+        LocalTime time = LocalTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
         System.out.println("来自客户端"+session.getId()+"的消息："+message);
         //        群发消息
         for (WebSockTest item:webSocketSet){
             try {
-                if(item.session != session)
-                item.sendMessage("客户端"+session.getId()+"："+message);
-                else
-                item.sendMessage("我："+message);
+
+
+                if(item.session != session){
+                    item.sendMessage(time.format(formatter) + "   客户端"+session.getId()+"："+message);
+                }
+
+
+                else{
+                    item.sendMessage(time.format(formatter) + "   我："+message);
+                }
+
 
             } catch (IOException e) {
                 e.printStackTrace();
                 continue;
             }
+        }
+        if(message.equals("10001")){
+            this.sendMessage(time.format(formatter) + "   后端："+ "18001");
         }
     }
 
