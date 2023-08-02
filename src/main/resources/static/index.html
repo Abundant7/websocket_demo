@@ -5,53 +5,133 @@
   <title>WebSocket</title>
 </head>
 <body>
-Welcome<br/><input id="text" type="text"/>
-<button onclick="send()">发送消息</button>
-<hr/>
+
+Welcome<br/>
+<input id="username" type="text"/>
+<button onclick="beginWebSocket()">开启WebSocket连接</button>
 <button onclick="closeWebSocket()">关闭WebSocket连接</button>
 <hr/>
+<input id="originMessage" type="text"/>
+<button onclick="sendBtn()">发送消息</button>
+<input id="file" type="file" value="选择文件"/>
+<button onclick="fileBtn()">上传</button>
+<hr/>
 <div id="message"></div>
+
 </body>
 
+
+
+
+<script src="https://s3.pstatp.com/cdn/expire-1-M/jquery/3.3.1/jquery.min.js"></script>
 <script type="text/javascript">
-  var websocket = null;
-  //判断当前浏览器是否支持WebSocket
-  if ('WebSocket' in window) {
-    websocket = new WebSocket('ws://localhost:8080/websocket');
-  }
-  else {
-    alert('当前浏览器 Not support websocket')
+  let websocket = null;
+  let file;
+  $('#username').keyup(function (e) {
+    let keycode = e.which;
+    if (keycode == 13) {
+      $('#joinRoomBtn').click();
+    }
+  });
+
+
+  function beginWebSocket() {
+    let username = $('#username').val();
+    //判断当前浏览器是否支持WebSocket
+    if ('WebSocket' in window) {
+      websocket = new WebSocket('ws://localhost:8090/websocket');
+    } else {
+      alert('当前浏览器 Not support websocket')
+    }
+   //////////////////////////////////////////////////////////////////////
+
+
+    //连接关闭的回调方法
+    websocket.onclose = function (event) {
+      //var message = "连接关闭";
+      //websocket.send(message);
+      //setMessageInnerHTML("WebSocket连接关闭");
+      $('#message').append('websocket已断开\n');
+    }
+
+    //连接成功建立的回调方法
+    websocket.onopen = function () {
+      ///
+      sendMessage('tip', username);
+      //heartCheck.start();
+    }
+
+
+    //接收到消息的回调方法
+    /*websocket.onmessage = function (event) {
+      heartCheck.reset()
+      heartCheck.start()
+      setMessageInnerHTML(event.data);
+    }*/
+
+    websocket.onmessage = function (event) {
+
+      //heartCheck.reset()
+      //heartCheck.start()
+      //这个 data 和刚刚的 Message 一样
+      let data = {
+        operation: '',
+        msg: ''
+      };
+
+      data = JSON.parse(event.data);
+      switch (data.operation) {
+        case "heart":
+          $('#message').append(data.msg + '<br/>');
+          break;
+        case "tip":
+          $('#message').append(data.msg + '<br/>');
+          break;
+        case "msg":     //显示消息
+          $('#message').append(data.msg + '<br/>');
+          break;
+        case "filename":
+          $('#message').append(data.msg + '<br/>');
+          fileUploadSize = 0;
+          sendFile(file);
+          break;
+        case "file-upload-success":
+          fileUploadSize += parseInt(data.msg);
+          //文件没有上传完成
+          if (fileUploadSize < file.size) {
+            sendFile(file);
+          } else {
+            sendMessage('msg', '上传了一个文件【' + file.name + '】');
+          }
+          break;
+        case "file-upload-fail":
+          $('#message').append(data.msg + '<br/>');
+          break;
+      }
+    }
+
+
+    //连接发生错误的回调方法
+    websocket.onerror = function () {
+      //setMessageInnerHTML("WebSocket连接发生错误");
+      $('#message').append("WebSocket连接发生错误");
+    };
+
+
+
+
+
+
+
+    //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
+    window.onbeforeunload = function () {
+      closeWebSocket();
+    }
   }
 
-  //连接发生错误的回调方法
-  websocket.onerror = function () {
-    setMessageInnerHTML("WebSocket连接发生错误");
-  };
 
-  //连接成功建立的回调方法
-  websocket.onopen = function () {
-    setMessageInnerHTML("WebSocket连接成功");
-    heartCheck.start();
-  }
 
-  //接收到消息的回调方法
-  websocket.onmessage = function (event) {
-    heartCheck.reset()
-    heartCheck.start()
-    setMessageInnerHTML( event.data);
-  }
 
-  //连接关闭的回调方法
-  websocket.onclose = function (event) {
-    var message = "连接关闭";
-    websocket.send(message);
-    setMessageInnerHTML("WebSocket连接关闭");
-  }
-
-  //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
-  window.onbeforeunload = function () {
-    closeWebSocket();
-  }
 
   //将消息显示在网页上
   function setMessageInnerHTML(innerHTML) {
@@ -60,15 +140,70 @@ Welcome<br/><input id="text" type="text"/>
 
   //关闭WebSocket连接
   function closeWebSocket() {
-    var message = "连接关闭";
+    /*var message = "连接关闭";
     websocket.send(message);
-    websocket.close();
+    websocket.close();*/
+
+    if (websocket) {
+
+      sendMessage('msg', '断开了连接');
+      //关闭连接
+      websocket.close();
+    }
+
   }
 
+  function fileBtn(){
+    let files = [];
+    files = $('#file')[0].files;
+    if (files.length === 0) {
+      alert('请选择文件');
+      return;
+    }
+
+    //发送文件名
+    file = files[0];
+    sendMessage('filename', file.name);
+
+  }
+
+
   //发送消息
-  function send() {
-    var message = document.getElementById('text').value;
-    websocket.send(message);
+  function sendBtn() {
+    let message = document.getElementById('originMessage').value;
+    sendMessage('msg',message);
+  }
+
+
+
+  //发送消息
+  function sendMessage(operation, msg) {
+    //这个 data 和刚刚的 Message 一样
+    let data = {
+      operation: operation,
+      msg: msg,
+    };
+
+    //将 data 转成 json 字符串
+    websocket.send(JSON.stringify(data));
+  }
+
+
+  let fileUploadSize = 0;
+  function sendFile(file) {
+    let dist = file.size < fileUploadSize + 1024 ? file.size : fileUploadSize + 1024;
+    //切分文件
+    let blob = file.slice(fileUploadSize, dist);
+    //文件读取对象
+    let reader = new FileReader();
+
+    //文件加载后的回调函数
+    reader.onload = ev => {
+      let buffer = ev.target.result;
+      websocket.send(buffer);
+    }
+    //二进制加载文件
+    reader.readAsArrayBuffer(blob);
   }
 
 
@@ -87,7 +222,8 @@ Welcome<br/><input id="text" type="text"/>
       this.timeoutObj = setTimeout(function(){
         //这里发送一个心跳，后端收到后，返回一个心跳消息，
         //onmessage拿到返回的心跳就说明连接正常
-        websocket.send("10001");
+        //websocket.send("10001");
+        sendMessage('heart','10001')
 
         self.serverTimeoutObj = setTimeout(function(){//如果超过一定时间还没重置，说明后端主动断开了
           websocket.close();     //如果onclose会执行reconnect，我们执行ws.close()就行了.如果直接执行reconnect 会触发onclose导致重连两次

@@ -1,103 +1,117 @@
 package com.example.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.example.pojo.Message;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.concurrent.CopyOnWriteArrayList;
-
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import com.alibaba.fastjson.JSONObject;
 /**
  * @ServerEndPoint 注解是一个类层次的注解，它的功能主要是将目前的类定义成一个websocket服务器端，
  * 注解的值将被用于监听用户连接的终端访问URL地址，客户端可以通过这个URL连接到websocket服务器端
  */
+@Log4j2
 @ServerEndpoint("/websocket")
 @Component
 public class WebSockTest {
     private static int onlineCount=0;
-    private static CopyOnWriteArrayList<WebSockTest> webSocketSet=new CopyOnWriteArrayList<WebSockTest>();
+    private static Map<String, Session> webSocketSet=new ConcurrentHashMap<>();
     private Session session;
-    public void sendMessage(String message) throws IOException {
-        this.session.getBasicRemote().sendText(message);
-    }
+
     @OnOpen
     public void onOpen(Session session){
 
-        this.session=session;
-        webSocketSet.add(this);//加入set中
-        addOnlineCount();
-
-        for (WebSockTest item:webSocketSet){
-            try {
-                if(item.session != session){
-                    //item.sendMessage("客户端"+session.getId()+"加入连接！当前在线人数为"+getOnlineCount());
-                    item.session.getBasicRemote().sendText("客户端"+session.getId()+"加入连接！当前在线人数为"+getOnlineCount());
-                }
-
-                else{
-                    //item.sendMessage("当前在线人数为"+getOnlineCount()+"  您的客户端ID为："+session.getId());
-                    item.session.getBasicRemote().sendText("当前在线人数为"+getOnlineCount()+"  您的客户端ID为："+session.getId());
-                }
-
-            } catch (IOException e) {
-                e.printStackTrace();
-                continue;
-            }
-        }
-
-        System.out.println("有新连接加入！当前在线人数为"+getOnlineCount());
     }
 
     @OnClose
-    public void onClose(){
-        webSocketSet.remove(this);
-        subOnlineCount();
-        System.out.println("有一连接关闭！当前在线人数为" + getOnlineCount());
+    public void closeSession(Session session, CloseReason closeReason)
+    {
+        System.out.println(closeReason.toString());
+        //记得移除相对应的session
+        webSocketSet.remove(session.getId());
+
+        sendAll("[" + session.getId() + "]离开了房间");
     }
 
     @OnMessage
     public void onMessage(String message,Session session) throws IOException {
 
-        /*if(message.equals("10001")){
-            this.sendMessage("18001");
-        }*/
-        LocalTime time = LocalTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-        System.out.println("来自客户端"+session.getId()+"的消息："+message);
-        //        群发消息
 
-        if(message.equals("10001")){
-            //this.sendMessage(time.format(formatter) + "   后端："+ "18001");
-            this.session.getBasicRemote().sendText(time.format(formatter) + "   我："+message);
-            this.session.getBasicRemote().sendText(time.format(formatter) + "   后端："+ "18001");
+        //使用 fastjson 解析 json 字符串
+        final Message data = JSONObject.parseObject(message, Message.class);
+        //响应的信息
+        final Message response = Message.builder()
+                .operation(data.getOperation())         //将请求的 operation 放入
+                .build();
+        String username = (String) session.getUserProperties().get("username");
+
+
+        //根据不同的 operation 执行不同的操作
+        switch (data.getOperation()) {
+            //进入聊天室后保存用户名
+            case "heart":
+
+                response.setMsg("[" + username + "]10001\n<br/>[" + username + "]心跳回应：10008");
+                sendTo(session,JSONObject.toJSONString(response));
+                break;
+            case "tip":
+                session.getUserProperties().put("username", data.getMsg());
+                webSocketSet.put(session.getId(), session);
+                response.setMsg("[" + data.getMsg() + "]进入房间");
+                sendAll(JSONObject.toJSONString(response));
+                break;
+            //发送消息
+            case "msg":
+
+                response.setMsg("[" + username + "]: " + data.getMsg());
+                sendAll(JSONObject.toJSONString(response));
+                break;
+            case "filename":
+                //删除原有文件
+                File file = new File("F:\\BaiduNetdiskDownload\\2023新版JavaWeb开发教程\\笔记\\" + data.getMsg());
+                file.delete();
+                log.info(file.getCanonicalPath());
+
+                //保存文件信息
+                session.getUserProperties().put("file", file);
+
+                response.setMsg("文件【" + data.getMsg() + "】开始上传");
+                sendTo(session, JSONObject.toJSONString(response));
+                break;
         }
-        else{
-            for (WebSockTest item:webSocketSet){
-                try {
 
+    }
 
-                    if(item.session != session){
-                        //item.sendMessage(time.format(formatter) + "   客户端"+session.getId()+"："+message);
-                        item.session.getBasicRemote().sendText(time.format(formatter) + "   客户端"+session.getId()+"："+message);
-                    }
+    //响应字节流
+    @OnMessage
+    public void onMessage(Session session, byte[] message)
+    {
+        final Message response = new Message();
 
+        final File file = (File) session.getUserProperties().get("file");
 
-                    else{
-                        //item.sendMessage(time.format(formatter) + "   我："+message);
-                        item.session.getBasicRemote().sendText(time.format(formatter) + "   我："+message);
-                    }
-
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    continue;
-                }
-            }
+        if (saveFile(file, message)) {
+            response.setOperation("file-upload-success");
+            response.setMsg(message.length + "");
+            sendTo(session, JSONObject.toJSONString(response));
+        }
+        else {
+            response.setOperation("file-upload-fail");
+            response.setMsg("文件【" + file.getName() + "】上传失败");
+            file.delete();
+            sendTo(session, JSONObject.toJSONString(response));
         }
     }
+
 
     @OnError
     public void onError(Session session, Throwable throwable){
@@ -118,4 +132,39 @@ public class WebSockTest {
     public static synchronized void subOnlineCount(){
         WebSockTest.onlineCount--;
     }
+
+    private void sendAll(String message)
+    {
+        for (Session s : webSocketSet.values()) {
+            sendTo(s, message);
+        }
+    }
+
+
+
+
+    private void sendTo(Session session, String message)
+    {
+        final RemoteEndpoint.Basic remote = session.getBasicRemote();
+        try {
+            //发送消息
+            remote.sendText(message);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private boolean saveFile(File file, byte[] message)
+    {
+        try (OutputStream os = new FileOutputStream(file, true)) {
+            os.write(message, 0, message.length);
+            return true;
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
 }
