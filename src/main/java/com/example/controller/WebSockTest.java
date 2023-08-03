@@ -53,26 +53,30 @@ public class WebSockTest {
                 .operation(data.getOperation())         //将请求的 operation 放入
                 .build();
         String username = (String) session.getUserProperties().get("username");
-
+        LocalTime time = LocalTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
         //根据不同的 operation 执行不同的操作
         switch (data.getOperation()) {
             //进入聊天室后保存用户名
+
+
+
             case "heart":
 
-                response.setMsg("[" + username + "]10001\n<br/>[" + username + "]心跳回应：10008");
+                response.setMsg(time.format(formatter)+"[" + username + "]10001\n<br/>[" + username + "]心跳回应：10008");
                 sendTo(session,JSONObject.toJSONString(response));
                 break;
             case "tip":
                 session.getUserProperties().put("username", data.getMsg());
                 webSocketSet.put(session.getId(), session);
-                response.setMsg("[" + data.getMsg() + "]进入房间");
+                response.setMsg(time.format(formatter)+"[" + data.getMsg() + "]进入房间");
                 sendAll(JSONObject.toJSONString(response));
                 break;
             //发送消息
             case "msg":
 
-                response.setMsg("[" + username + "]: " + data.getMsg());
+                response.setMsg(time.format(formatter)+"[" + username + "]: " + data.getMsg());
                 sendAll(JSONObject.toJSONString(response));
                 break;
             case "filename":
@@ -84,7 +88,7 @@ public class WebSockTest {
                 //保存文件信息
                 session.getUserProperties().put("file", file);
 
-                response.setMsg("文件【" + data.getMsg() + "】开始上传");
+                response.setMsg(time.format(formatter)+"文件【" + data.getMsg() + "】开始上传");
                 sendTo(session, JSONObject.toJSONString(response));
                 break;
         }
@@ -96,6 +100,8 @@ public class WebSockTest {
     public void onMessage(Session session, byte[] message)
     {
         final Message response = new Message();
+        LocalTime time = LocalTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
         final File file = (File) session.getUserProperties().get("file");
 
@@ -106,7 +112,7 @@ public class WebSockTest {
         }
         else {
             response.setOperation("file-upload-fail");
-            response.setMsg("文件【" + file.getName() + "】上传失败");
+            response.setMsg(time.format(formatter)+"文件【" + file.getName() + "】上传失败");
             file.delete();
             sendTo(session, JSONObject.toJSONString(response));
         }
