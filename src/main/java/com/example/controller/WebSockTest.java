@@ -10,10 +10,12 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import com.alibaba.fastjson.JSONObject;
 /**
@@ -56,36 +58,56 @@ public class WebSockTest {
         String username = (String) session.getUserProperties().get("username");
         LocalTime time = LocalTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        Base64.Decoder decoder = Base64.getDecoder();
+        Base64.Encoder encoder = Base64.getEncoder();
+        String base64encodedString = data.getMsg();
+        byte[] base64decodedBytes = null;
+
+        if(!Objects.equals(data.getOperation(), "base64")){
+            base64decodedBytes = Base64.getDecoder().decode(base64encodedString);
+        }
+
+        String tmpMsg;
 
         //根据不同的 operation 执行不同的操作
         switch (data.getOperation()) {
+
             //进入聊天室后保存用户名
             case "heart":
+
                 response.setMsg(time.format(formatter)+"[" + username + "]10001\n<br/>[" + username + "]心跳回应：10008");
                 sendTo(session,JSONObject.toJSONString(response));
                 break;
             case "tip":
-                session.getUserProperties().put("username", data.getMsg());
+
                 webSocketSet.put(session.getId(), session);
-                response.setMsg(time.format(formatter)+"[" + data.getMsg() + "]进入房间");
+
+                session.getUserProperties().put("username", new String(base64decodedBytes, "utf-8"));
+                tmpMsg =time.format(formatter)+"[" + new String(base64decodedBytes, "utf-8") + "]进入房间";
+                tmpMsg = encoder.encodeToString(tmpMsg.getBytes(StandardCharsets.UTF_8));
+                response.setMsg(tmpMsg);
                 sendAll(JSONObject.toJSONString(response));
                 break;
             //发送消息
             case "msg":
 
-                response.setMsg(time.format(formatter)+"[" + username + "]: " + data.getMsg());
+                //response.setMsg(time.format(formatter)+"[" + username + "]: " + data.getMsg());
+                tmpMsg = time.format(formatter)+"[" + username + "]: " + new String(base64decodedBytes, "utf-8");
+                tmpMsg = encoder.encodeToString(tmpMsg.getBytes(StandardCharsets.UTF_8));
+                response.setMsg(tmpMsg);
                 sendAll(JSONObject.toJSONString(response));
                 break;
             case "filename":
                 //删除原有文件
-                File file = new File("F:\\BaiduNetdiskDownload\\2023新版JavaWeb开发教程\\笔记\\" + data.getMsg());
+                File file = new File("F:\\BaiduNetdiskDownload\\2023新版JavaWeb开发教程\\笔记\\" + new String(base64decodedBytes, "utf-8"));
                 file.delete();
                 log.info(file.getCanonicalPath());
 
                 //保存文件信息
                 session.getUserProperties().put("file", file);
-
-                response.setMsg(time.format(formatter)+"文件【" + data.getMsg() + "】开始上传");
+                tmpMsg = time.format(formatter)+"文件【" + new String(base64decodedBytes, "utf-8") + "】开始上传";
+                tmpMsg = encoder.encodeToString(tmpMsg.getBytes(StandardCharsets.UTF_8));
+                response.setMsg(tmpMsg);
                 sendTo(session, JSONObject.toJSONString(response));
                 break;
 
@@ -94,7 +116,6 @@ public class WebSockTest {
 
                 String messageData = data.getMsg();
                 String base64Data =  messageData.split(",")[1];
-                Base64.Decoder decoder = Base64.getDecoder();
                 byte[] bytes = decoder.decode(base64Data);
 
 

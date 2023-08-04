@@ -89,13 +89,13 @@ Welcome<br/>
           $('#message').append(data.msg + '<br/>');
           break;
         case "tip":
-          $('#message').append(data.msg + '<br/>');
+          $('#message').append(Base64.decode(data.msg) + '<br/>');
           break;
         case "msg":     //显示消息
-          $('#message').append(data.msg + '<br/>');
+          $('#message').append(Base64.decode(data.msg) + '<br/>');
           break;
         case "filename":
-          $('#message').append(data.msg + '<br/>');
+          $('#message').append(Base64.decode(data.msg) + '<br/>');
           fileUploadSize = 0;
           sendFile(file);
           break;
@@ -185,7 +185,7 @@ Welcome<br/>
     //这个 data 和刚刚的 Message 一样
     let data = {
       operation: operation,
-      msg: msg,
+      msg: Base64.encode(msg),
     };
 
     //将 data 转成 json 字符串
