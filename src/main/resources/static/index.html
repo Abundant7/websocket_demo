@@ -22,7 +22,7 @@ Welcome<br/>
 
 
 
-
+<script src="js/base64.js"></script>
 <script src="https://s3.pstatp.com/cdn/expire-1-M/jquery/3.3.1/jquery.min.js"></script>
 <script type="text/javascript">
   let websocket = null;
@@ -50,8 +50,8 @@ Welcome<br/>
     websocket.onclose = function (event) {
       //var message = "连接关闭";
       //websocket.send(message);
-      //setMessageInnerHTML("WebSocket连接关闭");
-      $('#message').append('websocket已断开\n');
+      //setMessageInnerHTML(message);
+      $('#message').append("websocket断开");
     }
 
     //连接成功建立的回调方法
@@ -200,10 +200,17 @@ Welcome<br/>
     //文件加载后的回调函数
     reader.onload = ev => {
       let buffer = ev.target.result;
-      websocket.send(buffer);
+      let data = {
+        operation: 'base64',
+        msg: buffer,
+      };
+
+
+      websocket.send(JSON.stringify(data));
     }
     //二进制加载文件
-    reader.readAsArrayBuffer(blob);
+    //reader.readAsArrayBuffer(blob);
+    reader.readAsDataURL(blob);
   }
 
 

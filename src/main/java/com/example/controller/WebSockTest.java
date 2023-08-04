@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import com.alibaba.fastjson.JSONObject;
@@ -59,11 +60,7 @@ public class WebSockTest {
         //根据不同的 operation 执行不同的操作
         switch (data.getOperation()) {
             //进入聊天室后保存用户名
-
-
-
             case "heart":
-
                 response.setMsg(time.format(formatter)+"[" + username + "]10001\n<br/>[" + username + "]心跳回应：10008");
                 sendTo(session,JSONObject.toJSONString(response));
                 break;
@@ -91,12 +88,30 @@ public class WebSockTest {
                 response.setMsg(time.format(formatter)+"文件【" + data.getMsg() + "】开始上传");
                 sendTo(session, JSONObject.toJSONString(response));
                 break;
+
+            case "base64":
+
+
+                String messageData = data.getMsg();
+                String base64Data =  messageData.split(",")[1];
+                Base64.Decoder decoder = Base64.getDecoder();
+                byte[] bytes = decoder.decode(base64Data);
+
+
+                final File lastFile = (File) session.getUserProperties().get("file");
+                if (saveFile(lastFile, bytes)) {
+                    response.setOperation("file-upload-success");
+                    response.setMsg(bytes.length + "");
+                    sendTo(session, JSONObject.toJSONString(response));
+                }
+
+
         }
 
     }
 
     //响应字节流
-    @OnMessage
+   /* @OnMessage
     public void onMessage(Session session, byte[] message)
     {
         final Message response = new Message();
@@ -116,7 +131,7 @@ public class WebSockTest {
             file.delete();
             sendTo(session, JSONObject.toJSONString(response));
         }
-    }
+    }*/
 
 
     @OnError
