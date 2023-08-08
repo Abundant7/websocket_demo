@@ -10,6 +10,9 @@ Welcome<br/>
 <input id="username" type="text"/>
 <button onclick="beginWebSocket()">开启WebSocket连接</button>
 <button onclick="closeWebSocket()">关闭WebSocket连接</button>
+<button onclick="testbtn()">测试</button>
+
+
 <hr/>
 <input id="originMessage" type="text"/>
 <button onclick="sendBtn()">发送消息</button>
@@ -20,8 +23,8 @@ Welcome<br/>
 
 </body>
 
-
-
+<script src="https://cdn.bootcdn.net/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/crypto-js/4.1.1/crypto-js.js"></script>
 <script src="js/base64.js"></script>
 <script src="https://s3.pstatp.com/cdn/expire-1-M/jquery/3.3.1/jquery.min.js"></script>
 <script type="text/javascript">
@@ -182,10 +185,13 @@ Welcome<br/>
 
   //发送消息
   function sendMessage(operation, msg) {
+
+    //var key = 'D3eU9n7t';
     //这个 data 和刚刚的 Message 一样
     let data = {
       operation: operation,
       msg: Base64.encode(msg),
+      //msg: Base64.encode(encryptByDES(msg),key),
     };
 
     //将 data 转成 json 字符串
@@ -212,10 +218,52 @@ Welcome<br/>
 
       websocket.send(JSON.stringify(data));
     }
-    //二进制加载文件
+    //base64加载文件
     //reader.readAsArrayBuffer(blob);
     reader.readAsDataURL(blob);
   }
+
+  //DES加密
+  function encryptByDES(message, key){
+    var iv = CryptoJS.enc.Utf8.parse('epsoftgz');
+    var keyHex = CryptoJS.enc.Utf8.parse(key);
+    var encrypted = CryptoJS.DES.encrypt(message, keyHex, {
+      iv: iv,
+      mode: CryptoJS.mode.CBC,
+      padding: CryptoJS.pad.Pkcs7
+    });
+    return encrypted.ciphertext.toString();
+  }
+  //DES解密
+  function decryptByDES(ciphertext, key){
+    var iv = CryptoJS.enc.Utf8.parse('epsoftgz');
+    var keyHex = CryptoJS.enc.Utf8.parse(key);
+    var decrypted = CryptoJS.DES.decrypt({
+      ciphertext: CryptoJS.enc.Hex.parse(ciphertext)
+    }, keyHex, {
+      iv: iv,
+      mode: CryptoJS.mode.CBC,
+      padding: CryptoJS.pad.Pkcs7
+    });
+    var result_value = decrypted.toString(CryptoJS.enc.Utf8);
+    return result_value;
+  }
+  function testbtn(){
+    var message = '111';//需要加密的数据
+    var key = 'D3eU9n7t';//加密key
+//加密
+    let desMessage = encryptByDES(message, key);
+    console.log(desMessage);
+//解密
+    let demessage = decryptByDES(desMessage,key)
+    console.log(demessage);
+    alert(desMessage)
+    alert(demessage)
+
+  }
+
+
+
 
 
   //心跳检测
