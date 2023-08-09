@@ -107,7 +107,7 @@ public class WebSockTest {
             case "filename":
                 desdecodeMsg = mydes.decrypt(new String(base64decodedBytes, "utf-8"),desKey);
                 //删除原有文件
-                File file = new File("F:\\BaiduNetdiskDownload\\2023新版JavaWeb开发教程\\笔记\\" + new String(base64decodedBytes, "utf-8"));
+                File file = new File("F:\\BaiduNetdiskDownload\\2023新版JavaWeb开发教程\\笔记\\" + desdecodeMsg);
                 file.delete();
                 log.info(file.getCanonicalPath());
 
@@ -124,10 +124,10 @@ public class WebSockTest {
 
 
                 String messageData = data.getMsg();
-                String base64Data =  messageData.split(",")[1];
+                String deDesMessage = mydes.decrypt(messageData,desKey);
+                String base64Data =  deDesMessage.split(",")[1];
+                //String base64Data =  messageData.split(",")[1];
                 byte[] bytes = decoder.decode(base64Data);
-
-
                 final File lastFile = (File) session.getUserProperties().get("file");
                 if (saveFile(lastFile, bytes)) {
                     response.setOperation("file-upload-success");

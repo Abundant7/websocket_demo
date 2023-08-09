@@ -146,11 +146,8 @@ public class mydes {
     public static void main(String[] args) {
         String data = "wadsafsdfcsf";
         String key = "D3eU9n7t";
-
-
         String desString = encrypt(data,key);
         System.out.println("DES:" + desString);
-
         String decodeString = decrypt(desString,key);
         System.out.println(decodeString);
 

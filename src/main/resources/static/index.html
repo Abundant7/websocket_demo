@@ -198,13 +198,16 @@ Welcome<br/>
     let blob = file.slice(fileUploadSize, dist);
     //文件读取对象
     let reader = new FileReader();
-
+    var key = 'D3eU9n7t';
     //文件加载后的回调函数
     reader.onload = ev => {
       let buffer = ev.target.result;
+      let encryptedBuffer = encryptByDES(buffer, key);
+      //console.log(buffer)
+
       let data = {
         operation: 'base64',
-        msg: buffer,
+        msg: encryptedBuffer,
       };
 
 
