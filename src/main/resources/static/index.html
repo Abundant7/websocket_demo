@@ -85,20 +85,20 @@ Welcome<br/>
         operation: '',
         msg: ''
       };
-
+      let keyy = 'D3eU9n7t'
       data = JSON.parse(event.data);
       switch (data.operation) {
         case "heart":
           $('#message').append(data.msg + '<br/>');
           break;
         case "tip":
-          $('#message').append(Base64.decode(data.msg) + '<br/>');
+          $('#message').append(decryptByDES(Base64.decode(data.msg),keyy) + '<br/>');
           break;
         case "msg":     //显示消息
-          $('#message').append(Base64.decode(data.msg) + '<br/>');
+          $('#message').append(decryptByDES(Base64.decode(data.msg),keyy) + '<br/>');
           break;
         case "filename":
-          $('#message').append(Base64.decode(data.msg) + '<br/>');
+          $('#message').append(decryptByDES(Base64.decode(data.msg),keyy) + '<br/>');
           fileUploadSize = 0;
           sendFile(file);
           break;
@@ -125,19 +125,11 @@ Welcome<br/>
     };
 
 
-
-
-
-
-
     //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
     window.onbeforeunload = function () {
       closeWebSocket();
     }
   }
-
-
-
 
 
   //将消息显示在网页上
@@ -186,14 +178,14 @@ Welcome<br/>
   //发送消息
   function sendMessage(operation, msg) {
 
-    //var key = 'D3eU9n7t';
+    var key = 'D3eU9n7t';
     //这个 data 和刚刚的 Message 一样
     let data = {
       operation: operation,
-      msg: Base64.encode(msg),
-      //msg: Base64.encode(encryptByDES(msg),key),
+      //msg: Base64.encode(msg),
+      msg: Base64.encode(encryptByDES(msg,key)),
     };
-
+    console.log(msg);
     //将 data 转成 json 字符串
     websocket.send(JSON.stringify(data));
   }
@@ -249,13 +241,17 @@ Welcome<br/>
     return result_value;
   }
   function testbtn(){
-    var message = '111';//需要加密的数据
+    var message = 'wadsafsdfcsf';//需要加密的数据
     var key = 'D3eU9n7t';//加密key
 //加密
     let desMessage = encryptByDES(message, key);
+    let basedesMessage = Base64.encode(desMessage)
     console.log(desMessage);
+    console.log(basedesMessage);
+    let dessMessage = Base64.decode(basedesMessage)
 //解密
-    let demessage = decryptByDES(desMessage,key)
+    let demessage = decryptByDES(dessMessage,key)
+    console.log(dessMessage);
     console.log(demessage);
     alert(desMessage)
     alert(demessage)

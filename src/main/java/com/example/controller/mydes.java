@@ -26,6 +26,7 @@ public class mydes {
             encodeData = byteToHexString(bt);
         } catch (Exception e) {
             //logger.error("异常",e);
+            System.out.println("异常"+e);
         }
         return encodeData;
     }
@@ -79,6 +80,7 @@ public class mydes {
             decryptString = new String(bt, CHARSET_UTF8);
         } catch (Exception e) {
             //logger.error("异常",e);
+            System.out.println("异常"+e);
         }
         return decryptString;
     }
@@ -98,8 +100,11 @@ public class mydes {
 
         // Cipher对象实际完成解密操作
         Cipher cipher = Cipher.getInstance(PKCS_5_PADDING);
+        String IV = "epsoftgz";
+        IvParameterSpec iv = new IvParameterSpec(IV.getBytes());
+        AlgorithmParameterSpec paramSpec = iv;
         // 用密钥初始化Cipher对象
-        cipher.init(Cipher.DECRYPT_MODE, securekey, new IvParameterSpec(dks.getKey()));
+        cipher.init(Cipher.DECRYPT_MODE, securekey, paramSpec);
 
         return cipher.doFinal(data);
     }
@@ -139,7 +144,7 @@ public class mydes {
     static final String CHARSET_UTF8 = "UTF-8";
 
     public static void main(String[] args) {
-        String data = "111";
+        String data = "wadsafsdfcsf";
         String key = "D3eU9n7t";
 
 

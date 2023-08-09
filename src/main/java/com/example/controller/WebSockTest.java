@@ -62,12 +62,14 @@ public class WebSockTest {
         Base64.Encoder encoder = Base64.getEncoder();
         String base64encodedString = data.getMsg();
         byte[] base64decodedBytes = null;
+        String desKey = "D3eU9n7t";
 
         if(!Objects.equals(data.getOperation(), "base64")){
             base64decodedBytes = Base64.getDecoder().decode(base64encodedString);
         }
 
         String tmpMsg;
+        String desdecodeMsg;
 
         //根据不同的 operation 执行不同的操作
         switch (data.getOperation()) {
@@ -81,23 +83,29 @@ public class WebSockTest {
             case "tip":
 
                 webSocketSet.put(session.getId(), session);
-
-                session.getUserProperties().put("username", new String(base64decodedBytes, "utf-8"));
-                tmpMsg =time.format(formatter)+"[" + new String(base64decodedBytes, "utf-8") + "]进入房间";
+                desdecodeMsg = mydes.decrypt(new String(base64decodedBytes, "utf-8"),desKey);
+                //session.getUserProperties().put("username", new String(base64decodedBytes, "utf-8"));
+                session.getUserProperties().put("username", desdecodeMsg);
+                tmpMsg =time.format(formatter)+"[" + desdecodeMsg + "]进入房间";
+                tmpMsg = mydes.encrypt(tmpMsg,desKey);
                 tmpMsg = encoder.encodeToString(tmpMsg.getBytes(StandardCharsets.UTF_8));
                 response.setMsg(tmpMsg);
                 sendAll(JSONObject.toJSONString(response));
                 break;
             //发送消息
             case "msg":
+                desdecodeMsg = mydes.decrypt(new String(base64decodedBytes, "utf-8"),desKey);
 
                 //response.setMsg(time.format(formatter)+"[" + username + "]: " + data.getMsg());
-                tmpMsg = time.format(formatter)+"[" + username + "]: " + new String(base64decodedBytes, "utf-8");
+                //tmpMsg = time.format(formatter)+"[" + username + "]: " + new String(base64decodedBytes, "utf-8");
+                tmpMsg = time.format(formatter)+"[" + username + "]: " + desdecodeMsg;
+                tmpMsg = mydes.encrypt(tmpMsg,desKey);
                 tmpMsg = encoder.encodeToString(tmpMsg.getBytes(StandardCharsets.UTF_8));
                 response.setMsg(tmpMsg);
                 sendAll(JSONObject.toJSONString(response));
                 break;
             case "filename":
+                desdecodeMsg = mydes.decrypt(new String(base64decodedBytes, "utf-8"),desKey);
                 //删除原有文件
                 File file = new File("F:\\BaiduNetdiskDownload\\2023新版JavaWeb开发教程\\笔记\\" + new String(base64decodedBytes, "utf-8"));
                 file.delete();
@@ -105,7 +113,8 @@ public class WebSockTest {
 
                 //保存文件信息
                 session.getUserProperties().put("file", file);
-                tmpMsg = time.format(formatter)+"文件【" + new String(base64decodedBytes, "utf-8") + "】开始上传";
+                tmpMsg = time.format(formatter)+"文件【" + desdecodeMsg + "】开始上传";
+                tmpMsg = mydes.encrypt(tmpMsg,desKey);
                 tmpMsg = encoder.encodeToString(tmpMsg.getBytes(StandardCharsets.UTF_8));
                 response.setMsg(tmpMsg);
                 sendTo(session, JSONObject.toJSONString(response));
