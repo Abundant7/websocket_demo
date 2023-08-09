@@ -48,28 +48,37 @@ public class WebSockTest {
     @OnMessage
     public void onMessage(String message,Session session) throws IOException {
 
-
+        //当前session对应用户用户名
+        String username = (String) session.getUserProperties().get("username");
+        //创建base64编解码对象
+        Base64.Decoder decoder = Base64.getDecoder();
+        Base64.Encoder encoder = Base64.getEncoder();
+        //密钥
+        String desKey = "D3eU9n7t";
+        //临时消息
+        String tmpMsg;
+        //
+        String allDecodeMsg = null;
+        //时间处理
+        LocalTime time = LocalTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
         //使用 fastjson 解析 json 字符串
         final Message data = JSONObject.parseObject(message, Message.class);
         //响应的信息
         final Message response = Message.builder()
                 .operation(data.getOperation())         //将请求的 operation 放入
                 .build();
-        String username = (String) session.getUserProperties().get("username");
-        LocalTime time = LocalTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-        Base64.Decoder decoder = Base64.getDecoder();
-        Base64.Encoder encoder = Base64.getEncoder();
+
+        //获取原始消息
         String base64encodedString = data.getMsg();
         byte[] base64decodedBytes = null;
-        String desKey = "D3eU9n7t";
 
         if(!Objects.equals(data.getOperation(), "base64")){
             base64decodedBytes = Base64.getDecoder().decode(base64encodedString);
+            allDecodeMsg = mydes.decrypt(new String(base64decodedBytes, "utf-8"),desKey);
         }
 
-        String tmpMsg;
-        String desdecodeMsg;
+
 
         //根据不同的 operation 执行不同的操作
         switch (data.getOperation()) {
@@ -83,10 +92,10 @@ public class WebSockTest {
             case "tip":
 
                 webSocketSet.put(session.getId(), session);
-                desdecodeMsg = mydes.decrypt(new String(base64decodedBytes, "utf-8"),desKey);
+                //allDecodeMsg = mydes.decrypt(new String(base64decodedBytes, "utf-8"),desKey);
                 //session.getUserProperties().put("username", new String(base64decodedBytes, "utf-8"));
-                session.getUserProperties().put("username", desdecodeMsg);
-                tmpMsg =time.format(formatter)+"[" + desdecodeMsg + "]进入房间";
+                session.getUserProperties().put("username", allDecodeMsg);
+                tmpMsg =time.format(formatter)+"[" + allDecodeMsg + "]进入房间";
                 tmpMsg = mydes.encrypt(tmpMsg,desKey);
                 tmpMsg = encoder.encodeToString(tmpMsg.getBytes(StandardCharsets.UTF_8));
                 response.setMsg(tmpMsg);
@@ -94,26 +103,26 @@ public class WebSockTest {
                 break;
             //发送消息
             case "msg":
-                desdecodeMsg = mydes.decrypt(new String(base64decodedBytes, "utf-8"),desKey);
+                //allDecodeMsg = mydes.decrypt(new String(base64decodedBytes, "utf-8"),desKey);
 
                 //response.setMsg(time.format(formatter)+"[" + username + "]: " + data.getMsg());
                 //tmpMsg = time.format(formatter)+"[" + username + "]: " + new String(base64decodedBytes, "utf-8");
-                tmpMsg = time.format(formatter)+"[" + username + "]: " + desdecodeMsg;
+                tmpMsg = time.format(formatter)+"[" + username + "]: " + allDecodeMsg;
                 tmpMsg = mydes.encrypt(tmpMsg,desKey);
                 tmpMsg = encoder.encodeToString(tmpMsg.getBytes(StandardCharsets.UTF_8));
                 response.setMsg(tmpMsg);
                 sendAll(JSONObject.toJSONString(response));
                 break;
             case "filename":
-                desdecodeMsg = mydes.decrypt(new String(base64decodedBytes, "utf-8"),desKey);
+                //allDecodeMsg = mydes.decrypt(new String(base64decodedBytes, "utf-8"),desKey);
                 //删除原有文件
-                File file = new File("F:\\BaiduNetdiskDownload\\2023新版JavaWeb开发教程\\笔记\\" + desdecodeMsg);
+                File file = new File("F:\\BaiduNetdiskDownload\\2023新版JavaWeb开发教程\\笔记\\" + allDecodeMsg);
                 file.delete();
                 log.info(file.getCanonicalPath());
 
                 //保存文件信息
                 session.getUserProperties().put("file", file);
-                tmpMsg = time.format(formatter)+"文件【" + desdecodeMsg + "】开始上传";
+                tmpMsg = time.format(formatter)+"文件【" + allDecodeMsg + "】开始上传";
                 tmpMsg = mydes.encrypt(tmpMsg,desKey);
                 tmpMsg = encoder.encodeToString(tmpMsg.getBytes(StandardCharsets.UTF_8));
                 response.setMsg(tmpMsg);

@@ -9,6 +9,10 @@ import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
 
 public class mydes {
+    public static String IV = "epsoftgz";
+    public static IvParameterSpec iv = new IvParameterSpec(IV.getBytes());
+    public static AlgorithmParameterSpec paramSpec = iv;
+
 
     /**
      * 使用指定的key对字符串加密
@@ -39,9 +43,9 @@ public class mydes {
         SecretKey securekey = keyFactory.generateSecret(dks);
 
         Cipher cipher = Cipher.getInstance(PKCS_5_PADDING);
-        String IV = "epsoftgz";
+        /*String IV = "epsoftgz";
         IvParameterSpec iv = new IvParameterSpec(IV.getBytes());
-        AlgorithmParameterSpec paramSpec = iv;
+        AlgorithmParameterSpec paramSpec = iv;*/
         cipher.init(Cipher.ENCRYPT_MODE, securekey, paramSpec);
         //cipher.init(Cipher.ENCRYPT_MODE, securekey, new IvParameterSpec(dks.getKey()));
         return cipher.doFinal(data);
@@ -100,9 +104,9 @@ public class mydes {
 
         // Cipher对象实际完成解密操作
         Cipher cipher = Cipher.getInstance(PKCS_5_PADDING);
-        String IV = "epsoftgz";
+        /*String IV = "epsoftgz";
         IvParameterSpec iv = new IvParameterSpec(IV.getBytes());
-        AlgorithmParameterSpec paramSpec = iv;
+        AlgorithmParameterSpec paramSpec = iv;*/
         // 用密钥初始化Cipher对象
         cipher.init(Cipher.DECRYPT_MODE, securekey, paramSpec);
 

@@ -11,8 +11,6 @@ Welcome<br/>
 <button onclick="beginWebSocket()">开启WebSocket连接</button>
 <button onclick="closeWebSocket()">关闭WebSocket连接</button>
 <button onclick="testbtn()">测试</button>
-
-
 <hr/>
 <input id="originMessage" type="text"/>
 <button onclick="sendBtn()">发送消息</button>
@@ -30,6 +28,7 @@ Welcome<br/>
 <script type="text/javascript">
   let websocket = null;
   let file;
+  let key = 'D3eU9n7t'
   $('#username').keyup(function (e) {
     let keycode = e.which;
     if (keycode == 13) {
@@ -60,12 +59,10 @@ Welcome<br/>
 
     //连接成功建立的回调方法
     websocket.onopen = function () {
-      ///
-
-
 
       sendMessage('tip', username);
       //heartCheck.start();
+
     }
 
 
@@ -80,25 +77,25 @@ Welcome<br/>
 
       //heartCheck.reset()
       //heartCheck.start()
-      //这个 data 和刚刚的 Message 一样
+
       let data = {
         operation: '',
         msg: ''
       };
-      let keyy = 'D3eU9n7t'
+
       data = JSON.parse(event.data);
       switch (data.operation) {
         case "heart":
           $('#message').append(data.msg + '<br/>');
           break;
         case "tip":
-          $('#message').append(decryptByDES(Base64.decode(data.msg),keyy) + '<br/>');
+          $('#message').append(decryptByDES(Base64.decode(data.msg),key) + '<br/>');
           break;
         case "msg":     //显示消息
-          $('#message').append(decryptByDES(Base64.decode(data.msg),keyy) + '<br/>');
+          $('#message').append(decryptByDES(Base64.decode(data.msg),key) + '<br/>');
           break;
         case "filename":
-          $('#message').append(decryptByDES(Base64.decode(data.msg),keyy) + '<br/>');
+          $('#message').append(decryptByDES(Base64.decode(data.msg),key) + '<br/>');
           fileUploadSize = 0;
           sendFile(file);
           break;
@@ -178,7 +175,7 @@ Welcome<br/>
   //发送消息
   function sendMessage(operation, msg) {
 
-    var key = 'D3eU9n7t';
+    //var key = 'D3eU9n7t';
     //这个 data 和刚刚的 Message 一样
     let data = {
       operation: operation,
@@ -198,13 +195,12 @@ Welcome<br/>
     let blob = file.slice(fileUploadSize, dist);
     //文件读取对象
     let reader = new FileReader();
-    var key = 'D3eU9n7t';
+    //var key = 'D3eU9n7t';
     //文件加载后的回调函数
     reader.onload = ev => {
       let buffer = ev.target.result;
       let encryptedBuffer = encryptByDES(buffer, key);
       //console.log(buffer)
-
       let data = {
         operation: 'base64',
         msg: encryptedBuffer,
@@ -245,7 +241,7 @@ Welcome<br/>
   }
   function testbtn(){
     var message = 'wadsafsdfcsf';//需要加密的数据
-    var key = 'D3eU9n7t';//加密key
+    //var key = 'D3eU9n7t';//加密key
 //加密
     let desMessage = encryptByDES(message, key);
     let basedesMessage = Base64.encode(desMessage)
